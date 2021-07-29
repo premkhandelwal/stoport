@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:stoport/data/notes.dart';
 import 'package:stoport/logic/bloc/cubit/internet_cubit.dart';
 import 'package:stoport/logic/bloc/notes_bloc.dart';
 import 'package:stoport/screens/addUpdate_screen.dart';
@@ -11,8 +12,15 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>  {
+class _HomeScreenState extends State<HomeScreen> {
   TextEditingController searchController = new TextEditingController();
+  List<Notes?>? notes = [];
+  @override
+  void initState() {
+    context.read<NotesBloc>().add(FetchAllNotes());
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen>  {
                 stretch: true,
                 floating: true,
                 snap: true,
-                title: _topActions(context),
+                title: _topActions(context,),
                 automaticallyImplyLeading: false,
                 centerTitle: true,
                 titleSpacing: 0,
@@ -35,34 +43,61 @@ class _HomeScreenState extends State<HomeScreen>  {
               )
             ];
           },
-          body: BlocBuilder<NotesBloc, NotesState>(builder: (context, state) {
-            final internetState = context.watch<InternetCubit>().state;
-            if (internetState is InternetConnected) {
-              if (state is NotesLoadSuccess) {
-                return state.notes != null && state.notes!.length != 0
-                    ? buildGridView(state)
-                    : Center(
-                        child: Text(
-                          "No Items Present",
-                          style: TextStyle(fontSize: 25),
-                        ),
-                      );
-              } else if (state is NotesInitial) {
-                context.read<NotesBloc>().add(FetchAllNotes());
-                return Center(child: CircularProgressIndicator());
-              } else {
-                return Text(
-                  "No Items Present",
-                  style: TextStyle(fontSize: 100),
-                );
-              }
-            } else {
-              return Center(child: Text("No Internet",
-                  style: TextStyle(fontSize: 100),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              // if the internet connection is available or not etc..
+              await Future.delayed(
+                Duration(seconds: 2),
+              );
+              context.read<InternetCubit>();
+              context.read<NotesBloc>().add(FetchAllNotes());
+            },
+            child: BlocBuilder<NotesBloc, NotesState>(
+              builder: (context, state) {
+                final internetState = context.watch<InternetCubit>().state;
               
-              ));
-            }
-          }),
+                if (internetState is InternetConnected) {
+                  if (state is NotesInitial) {
+                    context.read<NotesBloc>().add(FetchAllNotes());
+                    return Center(child: CircularProgressIndicator());
+                  } else if (state is NotesLoadSuccess) {
+                    notes = state.notes;
+                    return state.notes!.length != 0
+                        ? buildGridView(notes)
+                        : Center(
+                            child: Text(
+                              "No Items Present",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          );
+                  } else if (state is NotesSearch) {
+                    notes = state.notes;
+                    return state.notes!.length != 0
+                        ? buildGridView(notes)
+                        : Center(
+                            child: Text(
+                              "No Items Present",
+                              style: TextStyle(fontSize: 15),
+                            ),
+                          );
+                  } else {
+                    return Center(
+                      child: Text(
+                        "No Items Present",
+                        style: TextStyle(fontSize: 30),
+                      ),
+                    );
+                  }
+                } else {
+                  return Center(
+                      child: Text(
+                    "No Internet",
+                    style: TextStyle(fontSize: 30),
+                  ));
+                }
+              },
+            ),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -96,8 +131,8 @@ class _HomeScreenState extends State<HomeScreen>  {
                 Expanded(
                   child: TextFormField(
                     controller: searchController,
-                    onChanged: (val){
-                     
+                    onChanged: (val) {
+                      context.read<NotesBloc>().add(SearchNotes(val,notes));
                     },
                     decoration: InputDecoration(
                         border: InputBorder.none,
@@ -109,30 +144,21 @@ class _HomeScreenState extends State<HomeScreen>  {
                         hintStyle: TextStyle(fontSize: 20)),
                   ),
                 ),
-                /*   InkWell(
-              child: Icon(_gridView ? Icons.view_list : Icons.view_module),
-              onTap: () => setState(() {
-                _gridView = !_gridView; // switch between list and grid style
-              }),
-            ),
-            const SizedBox(width: 18),
-            _buildAvatar(context),
-            const SizedBox(width: 10), */
               ],
             ),
           ),
         ),
       );
 
-  Widget buildGridView(NotesLoadSuccess state) {
+  Widget buildGridView(List<Notes?>? notes) {
     return GridView.builder(
       shrinkWrap: true,
       padding: EdgeInsets.all(10),
       scrollDirection: Axis.vertical,
-      itemCount: state.notes!.length,
+      itemCount: notes?.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1,
-        childAspectRatio: 1.8,
+        childAspectRatio: 1,
         mainAxisSpacing: 20,
       ),
       itemBuilder: (context, index) {
@@ -143,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen>  {
               MaterialPageRoute(
                 builder: (context) => AddUpdateScreen(
                   isUpdate: true,
-                  notes: state.notes?[index],
+                  notes: notes?[index],
                 ),
               ),
             );
@@ -161,29 +187,40 @@ class _HomeScreenState extends State<HomeScreen>  {
                 )
               ],
             ),
-            child: buildContent(state, index),
+            child: buildContent(notes, index),
           ),
         );
       },
     );
   }
 
-  Widget buildContent(NotesLoadSuccess state, int index) {
+  Widget buildContent(List<Notes?>? notes, int index) {
+    num diffAmount = 0.00;
+    if (notes != null && notes[index] != null) {
+      if (notes[index]!.actualAmount != null &&
+          notes[index]!.calculatedAmount != null)
+        diffAmount = notes[index]!.actualAmount! -
+            notes[index]!.calculatedAmount!.toDouble();
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        buildRichText("Date: ", "${state.notes?[index]?.date}"),
+        buildRichText("Date: ", "${notes?[index]?.date}"),
         SizedBox(height: 20),
-        buildRichText("Company Name: ", "${state.notes?[index]?.companyName}"),
+        buildRichText("Company Name: ", "${notes?[index]?.companyName}"),
+        SizedBox(height: 20),
+        buildRichText("Sales/Purchase: ", "${notes?[index]?.salePurchase}"),
+        SizedBox(height: 20),
+        buildRichText("Quantity: ", "${notes?[index]?.quantity}"),
+        SizedBox(height: 20),
+        buildRichText("Rate: ", "${notes?[index]?.rate}"),
         SizedBox(height: 20),
         buildRichText(
-            "Sales/Purchase: ", "${state.notes?[index]?.salePurchase}"),
+            "Calculated Amount: ", "${notes?[index]?.calculatedAmount}"),
         SizedBox(height: 20),
-        buildRichText("Quantity: ", "${state.notes?[index]?.quantity}"),
+        buildRichText("Actual Amount: ", "${notes?[index]?.actualAmount}"),
         SizedBox(height: 20),
-        buildRichText("Rate: ", "${state.notes?[index]?.rate}"),
-        SizedBox(height: 20),
-        buildRichText("Amount: ", "${state.notes?[index]?.amount}"),
+        buildRichText("Difference in Amount: ", "$diffAmount"),
       ],
     );
   }

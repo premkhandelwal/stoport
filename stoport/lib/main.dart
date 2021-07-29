@@ -32,6 +32,7 @@ class MyApp extends StatelessWidget {
             create: (context) => NotesBloc(notesRepository: notesRepository)),
         BlocProvider<InternetCubit>(
             create: (context) => InternetCubit(connectivity: connectivity)),
+       
       ],
       child: MaterialApp(
         title: 'Flutter Demo',

@@ -3,7 +3,6 @@ part of 'notes_bloc.dart';
 @immutable
 abstract class NotesEvent {}
 
-
 class AddNote extends NotesEvent {
   AddNote(this.note);
   final Notes note;
@@ -14,10 +13,9 @@ class FetchAllNotes extends NotesEvent {}
 class FetchDeletedNotes extends NotesEvent {}
 
 class UpdateNote extends NotesEvent {
-  final Notes note; 
+  final Notes note;
 
   UpdateNote(
-    
     this.note,
   );
 }
@@ -27,4 +25,10 @@ class DeleteNotes extends NotesEvent {
   DeleteNotes(
     this.notes,
   );
+}
+
+class SearchNotes extends NotesEvent {
+  final String query;
+  final List<Notes?>? notes;
+  SearchNotes(this.query, this.notes);
 }

@@ -4,48 +4,55 @@ import 'package:stoport/data/notes.dart';
 class DataProviderFirebase {
   final notesCollection = FirebaseFirestore.instance.collection('notes');
 
-  Future<void> addNewNotes(Notes notes) async {
-    notesCollection.add({
+  Future<bool> addNewNotes(Notes notes) async {
+    bool responseVal = false;
+    await notesCollection.add({
       'companyName': "${notes.companyName}",
       'quantity': notes.quantity,
       'rate': notes.rate,
-      'amount': notes.amount,
+      'calculatedAmount': notes.calculatedAmount,
+      'actualAmount': notes.actualAmount,
       'date': "${notes.date}",
       'salePurchase': notes.salePurchase,
     });
-    print("added");
+    responseVal = true;
+    return responseVal;
   }
 
-  Future<void> updateExistingNotes(Notes notes) async {
+  Future<bool> updateExistingNotes(Notes notes) async {
     // FirebaseFirestore.instance.collection('collection_Name').doc('doc_Name').collection('collection_Name').doc(code.documentId).update({'redeem': true});
-
+    bool responseVal = false;
     notesCollection.doc("${notes.id}").update({
       'companyName': "${notes.companyName}",
       'quantity': notes.quantity,
       'rate': notes.rate,
       'date': "${notes.date}",
       'salePurchase': notes.salePurchase,
+      'calculatedAmount': notes.calculatedAmount,
+      'actualAmount': notes.actualAmount,
     });
-      print("updated");
+    responseVal = true;
+    return responseVal;
   }
 
   Future<List<Notes?>> fetchAllNotes() async {
     print("Hello");
     List<Notes?> listNotes = [];
 
-    var x = notesCollection.get(GetOptions(source: Source.server));
-
-    // x.catchError((e) => throw SocketException("No Internet Connection"));
-    x.then((querySnapshot) {
+    await notesCollection
+        .get(GetOptions(source: Source.server))
+        .then((querySnapshot) {
       querySnapshot.docs.forEach((result) {
         listNotes.add(
           Notes(
             companyName: result.data()["companyName"],
             id: result.id,
-            amount: double.parse(result.data()["amount"].toString()),
+            calculatedAmount:
+                num.parse(result.data()["calculatedAmount"].toString()),
+            actualAmount: num.parse(result.data()["actualAmount"].toString()),
             date: result.data()["date"],
-            quantity: double.parse(result.data()["quantity"].toString()),
-            rate: double.parse(result.data()["rate"].toString()),
+            quantity: num.parse(result.data()["quantity"].toString()),
+            rate: num.parse(result.data()["rate"].toString()),
             salePurchase: result.data()["salePurchase"],
           ),
         );
@@ -53,6 +60,8 @@ class DataProviderFirebase {
     });
     return listNotes;
   }
+
+ 
 
   Future<void> deleteNotes(List<String?> notes) async {
     for (var i = 0; i < notes.length; i++) {

@@ -1,13 +1,13 @@
-import 'dart:convert';
 
 class Notes {
   String? id;
   String? companyName;
   String? date;
   String? salePurchase;
-  double? quantity;
-  double? rate;
-  double? amount;
+  num? quantity;
+  num? rate;
+  num? calculatedAmount;
+  num? actualAmount;
   Notes({
     this.id,
     this.companyName,
@@ -15,16 +15,18 @@ class Notes {
     this.salePurchase,
     this.quantity,
     this.rate,
-    this.amount,
+    this.calculatedAmount=0.00,
+    this.actualAmount = 0.00,
   });
 
   Notes copyWith({
     String? companyName,
     String? date,
     String? salePurchase,
-    double? quantity,
-    double? rate,
-    double? amount,
+    num? quantity,
+    num? rate,
+    num? calculatedAmount,
+    num? actualAmount,
   }) {
     return Notes(
       companyName: companyName ?? this.companyName,
@@ -32,7 +34,8 @@ class Notes {
       salePurchase: salePurchase ?? this.salePurchase,
       quantity: quantity ?? this.quantity,
       rate: rate ?? this.rate,
-      amount: amount ?? this.amount,
+      calculatedAmount: calculatedAmount ?? this.calculatedAmount,
+      actualAmount: actualAmount ?? this.actualAmount,
     );
   }
 
@@ -43,7 +46,8 @@ class Notes {
       'salePurchase': salePurchase,
       'quantity': quantity,
       'rate': rate,
-      'amount': amount,
+      'calculatedAmount': calculatedAmount,
+      'actualAmount': actualAmount,
     };
   }
 
@@ -52,41 +56,12 @@ class Notes {
       companyName: map['companyName'],
       date: map['date'],
       salePurchase: map['salePurchase'],
-      quantity: double.parse(map['quantity'].toString()),
-      rate: double.parse(map['rate'].toString()),
-      amount: double.parse(map['amount'].toString()),
+      quantity: num.parse(map['quantity'].toString()),
+      rate: num.parse(map['rate'].toString()),
+      calculatedAmount: num.parse(map['calculatedAmount'].toString()),
+      actualAmount: num.parse(map['actualAmount'].toString()),
     );
   }
 
-  String toJson() => json.encode(toMap());
-
-  factory Notes.fromJson(String source) => Notes.fromMap(json.decode(source));
-
-  @override
-  String toString() {
-    return 'Notes(companyName: $companyName, date: $date, salePurchase: $salePurchase, quantity: $quantity, rate: $rate, amount: $amount)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is Notes &&
-        other.companyName == companyName &&
-        other.date == date &&
-        other.salePurchase == salePurchase &&
-        other.quantity == quantity &&
-        other.rate == rate &&
-        other.amount == amount;
-  }
-
-  @override
-  int get hashCode {
-    return companyName.hashCode ^
-        date.hashCode ^
-        salePurchase.hashCode ^
-        quantity.hashCode ^
-        rate.hashCode ^
-        amount.hashCode;
-  }
+ 
 }
