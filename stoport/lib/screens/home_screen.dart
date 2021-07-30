@@ -24,7 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
+      body: Padding(
+        padding: EdgeInsets.only(top: 15),
         child: NestedScrollView(
           floatHeaderSlivers: true,
           headerSliverBuilder: (context, istrue) {
@@ -33,7 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 stretch: true,
                 floating: true,
                 snap: true,
-                title: _topActions(context,),
+                title: _topActions(
+                  context,
+                ),
                 automaticallyImplyLeading: false,
                 centerTitle: true,
                 titleSpacing: 0,
@@ -55,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: BlocBuilder<NotesBloc, NotesState>(
               builder: (context, state) {
                 final internetState = context.watch<InternetCubit>().state;
-              
+
                 if (internetState is InternetConnected) {
                   if (state is NotesInitial) {
                     context.read<NotesBloc>().add(FetchAllNotes());
@@ -132,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: TextFormField(
                     controller: searchController,
                     onChanged: (val) {
-                      context.read<NotesBloc>().add(SearchNotes(val,notes));
+                      context.read<NotesBloc>().add(SearchNotes(val, notes));
                     },
                     decoration: InputDecoration(
                         border: InputBorder.none,
@@ -158,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       itemCount: notes?.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 1,
-        childAspectRatio: 1,
+        childAspectRatio: 1.2,
         mainAxisSpacing: 20,
       ),
       itemBuilder: (context, index) {
@@ -218,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         buildRichText(
             "Calculated Amount: ", "${notes?[index]?.calculatedAmount}"),
         SizedBox(height: 20),
-        buildRichText("Actual Amount: ", "${notes?[index]?.actualAmount}"),
+        buildRichText("Actual Amount: ", notes?[index]?.actualAmount != 0.00 ? "${notes?[index]?.actualAmount}" : '-'),
         SizedBox(height: 20),
         buildRichText("Difference in Amount: ", "$diffAmount"),
       ],

@@ -24,7 +24,7 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
   TextEditingController calculatedAmount = new TextEditingController();
   TextEditingController actualAmount = new TextEditingController();
   TextEditingController date = new TextEditingController();
-  String? salePurchaseVal = "Select Value";
+  String? salePurchaseVal = "Sale/Purchase";
 
   @override
   void initState() {
@@ -48,7 +48,8 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
         if (widget.notes!.calculatedAmount != null) {
           calculatedAmount.text = widget.notes!.calculatedAmount!.toString();
         }
-        if (widget.notes!.actualAmount != null) {
+        if (widget.notes!.actualAmount != null &&
+            widget.notes!.actualAmount != 0.00) {
           actualAmount.text = widget.notes!.actualAmount!.toString();
         }
       }
@@ -56,6 +57,7 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
     super.initState();
   }
 
+  final _formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,212 +67,247 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
         ),
         backgroundColor: Colors.white,
         title: Text(
-          "Add New Note",
+          widget.isUpdate ? "Update Note" : "Add New Note",
           style: TextStyle(color: Colors.black),
         ),
       ),
-      body: BlocBuilder<NotesBloc, NotesState>(
-        builder: (context, state) {
-          if (state is NotesOperationSuccess) {
-            SchedulerBinding.instance!.addPostFrameCallback((_) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text("Message"),
-                  content: widget.isUpdate
-                      ? Text(
-                          "Updated Successfully",
-                        )
-                      : Text(
-                          "Added Successfully",
+      body: Form(
+        key: _formKey,
+        child: BlocBuilder<NotesBloc, NotesState>(
+          builder: (context, state) {
+            if (state is NotesOperationSuccess) {
+              SchedulerBinding.instance!.addPostFrameCallback((_) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text("Message"),
+                    content: widget.isUpdate
+                        ? Text(
+                            "Updated Successfully",
+                          )
+                        : Text(
+                            "Added Successfully",
+                          ),
+                    actions: [
+                      ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HomeScreen(),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          child: Text("Ok"))
+                    ],
+                  ),
+                );
+              });
+            } else if (state is NotesOperationInProgress) {
+              return Center(child: CircularProgressIndicator());
+            }
+            return Container(
+              padding: EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    DateTimeField(
+                      validator: (val) {
+                        if (val == null) {
+                          return "This is a required field";
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: "Select Date",
+                        labelStyle: TextStyle(
+                          color: Colors.black54,
+                          fontSize: 20,
                         ),
-                  actions: [
-                    ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => HomeScreen(),
+                      ),
+                      controller: date,
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                      format: DateFormat(),
+                      onChanged: (selectedDate) {
+                        date.text =
+                            DateFormat("dd/MM/yyyy").format(selectedDate!);
+                      },
+                      onShowPicker: (context, currentValue) async {
+                        final time = showDatePicker(
+                          firstDate: DateTime(1500),
+                          lastDate: DateTime(3000),
+                          initialDate: DateTime.now(),
+                          helpText: "Select Date",
+                          fieldLabelText: "Select Date",
+                          context: context,
+                        );
+
+                        return time;
+                      },
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      validator: (val) {
+                        print(val);
+                        if (val == "") {
+                          return "This is a required field";
+                        }
+                        return null;
+                      },
+                      style: TextStyle(fontSize: 20, color: Colors.black),
+                      controller: companyName,
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Company Name",
+                          labelStyle:
+                              TextStyle(fontSize: 20, color: Colors.black54)),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    DropdownButtonFormField(
+                      validator: (val) {
+                        if (val == null) {
+                          return "This is a required field";
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(border: OutlineInputBorder()),
+                      hint: salePurchaseVal == null
+                          ? Text('Dropdown')
+                          : Text(
+                              salePurchaseVal!,
+                              style:
+                                  TextStyle(fontSize: 20),
                             ),
-                            (route) => false,
+                      isExpanded: true,
+                      iconSize: 30.0,
+                      style: TextStyle(color: Colors.black, fontSize: 20),
+                      items: ['Sale', 'Purchase'].map(
+                        (val) {
+                          return DropdownMenuItem<String>(
+                            value: val,
+                            child: Text(
+                              val,
+                              style: TextStyle(color: Colors.black),
+                            ),
                           );
                         },
-                        child: Text("Ok"))
-                  ],
-                ),
-              );
-            });
-          } else if (state is NotesOperationInProgress) {
-            return Center(child: CircularProgressIndicator());
-          }
-          return Container(
-            padding: EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  DateTimeField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: "Select Date",
-                      labelStyle: TextStyle(
-                        color: Colors.black54,
-                        fontSize: 20,
-                      ),
-                    ),
-                    controller: date,
-                    style: TextStyle(color: Colors.black, fontSize: 20),
-                    format: DateFormat(),
-                    onChanged: (selectedDate) {
-                      date.text =
-                          DateFormat("dd/MM/yyyy").format(selectedDate!);
-                    },
-                    onShowPicker: (context, currentValue) async {
-                      final time = showDatePicker(
-                        firstDate: DateTime(1500),
-                        lastDate: DateTime(3000),
-                        initialDate: DateTime.now(),
-                        helpText: "Select Date",
-                        fieldLabelText: "Select Date",
-                        context: context,
-                      );
-
-                      return time;
-                    },
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                    controller: companyName,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Company Name",
-                        labelStyle:
-                            TextStyle(fontSize: 20, color: Colors.black54)),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  DropdownButtonFormField(
-                    decoration: InputDecoration(border: OutlineInputBorder()),
-                    hint: salePurchaseVal == null
-                        ? Text('Dropdown')
-                        : Text(
-                            salePurchaseVal!,
-                            style: TextStyle(color: Colors.black, fontSize: 20),
-                          ),
-                    isExpanded: true,
-                    iconSize: 30.0,
-                    style: TextStyle(color: Colors.black, fontSize: 20),
-                    items: ['Sale', 'Purchase'].map(
-                      (val) {
-                        return DropdownMenuItem<String>(
-                          value: val,
-                          child: Text(
-                            val,
-                            style: TextStyle(color: Colors.black),
-                          ),
+                      ).toList(),
+                      onChanged: (String? val) {
+                        setState(
+                          () {
+                            salePurchaseVal = val;
+                          },
                         );
                       },
-                    ).toList(),
-                    onChanged: (String? val) {
-                      setState(
-                        () {
-                          salePurchaseVal = val;
-                        },
-                      );
-                    },
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                    onChanged: (val) {
-                      calculatedAmount.text =
-                          (num.parse(val) * num.parse(rate.text)).toString();
-                    },
-                    controller: quantity,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Quantity",
-                        labelStyle:
-                            TextStyle(fontSize: 20, color: Colors.black54)),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                    controller: rate,
-                    onChanged: (val) {
-                      calculatedAmount.text =
-                          (num.parse(val) * num.parse(quantity.text))
-                              .toString();
-                    },
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Rate",
-                        labelStyle:
-                            TextStyle(fontSize: 20, color: Colors.black54)),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    readOnly: true,
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                    controller: calculatedAmount,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Calculated Amount",
-                        labelStyle:
-                            TextStyle(fontSize: 20, color: Colors.black54)),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    style: TextStyle(fontSize: 20, color: Colors.black),
-                    controller: actualAmount,
-                    decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: "Actual Amount",
-                        labelStyle:
-                            TextStyle(fontSize: 20, color: Colors.black54)),
-                  ),
-                  SizedBox(
-                    height: 20,
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      callOperation();
-                    },
-                    child: Text("Submit"),
-                  )
-                  /* DropdownButton<String>(
-                      style: TextStyle(color: Colors.black),
-                      
-                      items: [
-                        DropdownMenuItem(
-                          child: Text("Sale"),
-                          value: value,
-                        ),
-                        DropdownMenuItem(
-                          child: Text("Purchase"),
-                          value: value,
-                        ),
-                      ],
-                      onChanged: (value) {
-                        value = value;
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      validator: (val) {
+                        if (val == "") {
+                          return "This is a required field";
+                        }
+                        return null;
                       },
-                    ) */
-                ],
+                      style: TextStyle(fontSize: 20, color: Colors.black),
+                      onChanged: (val) {
+                        calculatedAmount.text =
+                            (num.parse(val) * num.parse(rate.text)).toString();
+                      },
+                      controller: quantity,
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Quantity",
+                          labelStyle:
+                              TextStyle(fontSize: 20, color: Colors.black54)),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      validator: (val) {
+                         if (val == "") {
+                          return "This is a required field";
+                        }
+                        return null;
+                      },
+                      style: TextStyle(fontSize: 20, color: Colors.black),
+                      controller: rate,
+                      onChanged: (val) {
+                        calculatedAmount.text =
+                            (num.parse(val) * num.parse(quantity.text))
+                                .toString();
+                      },
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Rate",
+                          labelStyle:
+                              TextStyle(fontSize: 20, color: Colors.black54)),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      readOnly: true,
+                      style: TextStyle(fontSize: 20, color: Colors.black),
+                      controller: calculatedAmount,
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Calculated Amount",
+                          labelStyle:
+                              TextStyle(fontSize: 20, color: Colors.black54)),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    TextFormField(
+                      style: TextStyle(fontSize: 20, color: Colors.black),
+                      controller: actualAmount,
+                      decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          labelText: "Actual Amount",
+                          labelStyle:
+                              TextStyle(fontSize: 20, color: Colors.black54)),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) callOperation();
+                      },
+                      child: Text("Submit"),
+                    )
+                    /* DropdownButton<String>(
+                        style: TextStyle(color: Colors.black),
+                        
+                        items: [
+                          DropdownMenuItem(
+                            child: Text("Sale"),
+                            value: value,
+                          ),
+                          DropdownMenuItem(
+                            child: Text("Purchase"),
+                            value: value,
+                          ),
+                        ],
+                        onChanged: (value) {
+                          value = value;
+                        },
+                      ) */
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -283,7 +320,9 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
                       id: widget.notes!.id,
                       companyName: companyName.text,
                       calculatedAmount: num.parse(calculatedAmount.text),
-                      actualAmount: num.parse(actualAmount.text),
+                      actualAmount: actualAmount.text != ""
+                          ? num.parse(actualAmount.text)
+                          : 0.00,
                       date: date.text,
                       quantity: num.parse(quantity.text),
                       rate: num.parse(rate.text),
@@ -293,7 +332,9 @@ class _AddUpdateScreenState extends State<AddUpdateScreen> {
                   Notes(
                       companyName: companyName.text,
                       calculatedAmount: num.parse(calculatedAmount.text),
-                      actualAmount: num.parse(actualAmount.text),
+                      actualAmount: actualAmount.text != ""
+                          ? num.parse(actualAmount.text)
+                          : 0.00,
                       date: date.text,
                       quantity: num.parse(quantity.text),
                       rate: num.parse(rate.text),
